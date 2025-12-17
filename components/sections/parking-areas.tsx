@@ -1,8 +1,10 @@
 "use client"
 
-import { MapPin, Navigation, Building2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { MapPin, Navigation, Building2, ArrowRight } from "lucide-react"
 
 export function ParkingAreas() {
+  const router = useRouter()
   const areas = [
     {
       id: "A1",
@@ -199,15 +201,17 @@ export function ParkingAreas() {
                 </div>
 
                 {/* Car Grid */}
-                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="bg-gray-50 rounded-lg p-3 border-2 border-gray-200">
                   <div className="grid grid-cols-12 gap-1.5">
                     {Array.from({ length: 24 }).map((_, i) => {
                       const isOccupied = i < Math.round((area.occupied / area.slots) * 24)
                       const slotNumber = i + 1
                       return (
                         <div key={`${area.id}-vis-${i}`}>
-                          <div className={`w-full aspect-square rounded flex items-center justify-center text-white font-bold text-[10px] ${
-                            isOccupied ? 'bg-red-500' : 'bg-green-500'
+                          <div className={`w-full aspect-square rounded border-2 flex items-center justify-center font-bold text-[10px] ${
+                            isOccupied 
+                              ? 'border-red-500 bg-red-50 text-red-700' 
+                              : 'border-green-500 bg-green-50 text-green-700'
                           }`}>
                             {slotNumber}
                           </div>
@@ -220,17 +224,14 @@ export function ParkingAreas() {
 
               {/* Footer */}
               <div className="px-5 py-3 bg-gray-50 border-t-2 border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3 text-xs text-gray-500">
+                <div className="flex items-center gap-3 text-xs text-gray-600">
                   {area.violations > 0 && (
-                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded font-medium">
+                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded font-medium border border-red-300">
                       {area.violations} Issue{area.violations > 1 ? 's' : ''}
                     </span>
                   )}
-                  <span className="font-mono">{area.coordinates}</span>
+                  <span className="font-mono text-gray-700">{area.coordinates}</span>
                 </div>
-                <button className="text-xs font-semibold text-blue-600 hover:text-blue-700">
-                  Details →
-                </button>
               </div>
             </div>
           )

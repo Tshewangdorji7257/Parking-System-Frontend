@@ -1,7 +1,8 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Clock, MapPin, Timer, AlertCircle, TrendingUp } from "lucide-react"
+import { Clock, MapPin, Timer, AlertCircle, TrendingUp, DollarSign } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface Vehicle {
@@ -11,7 +12,10 @@ interface Vehicle {
   durationMinutes: number
   status: "Normal" | "Warning" | "Alert"
   license: string
+  entryTimestamp: number
 }
+
+const HOURLY_RATE = 20 // 20 per hour
 
 interface AreaData {
   id: string
@@ -23,6 +27,42 @@ interface AreaData {
 }
 
 export function DurationTracker() {
+  const [currentTime, setCurrentTime] = useState(Date.now())
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000) // Update every second
+
+    return () => clearInterval(timer)
+  }, [])
+
+  const calculateDuration = (entryTimestamp: number) => {
+    const now = currentTime
+    const durationMs = now - entryTimestamp
+    const totalMinutes = Math.floor(durationMs / 60000)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return { hours, minutes, totalMinutes }
+  }
+
+  const calculateFee = (totalMinutes: number) => {
+    const hours = totalMinutes / 60
+    return Math.ceil(hours * HOURLY_RATE)
+  }
+
+  const getStatus = (totalMinutes: number): "Normal" | "Warning" | "Alert" => {
+    if (totalMinutes >= 420) return "Alert" // 7+ hours
+    if (totalMinutes >= 300) return "Warning" // 5+ hours
+    return "Normal"
+  }
+
+  // Create entry timestamps (simulating cars that parked at different times today)
+  const now = new Date()
+  const createTimestamp = (hoursAgo: number, minutesAgo: number) => {
+    return now.getTime() - (hoursAgo * 60 * 60 * 1000) - (minutesAgo * 60 * 1000)
+  }
+
   const parkingAreas: AreaData[] = [
     {
       id: "A1",
@@ -31,10 +71,10 @@ export function DurationTracker() {
       avgDuration: "3h 45m",
       longestDuration: "6h 20m",
       vehicles: [
-        { slot: "A1-001", entry: "08:30 AM", duration: "4h 22m", durationMinutes: 262, status: "Normal", license: "BP-2024-101" },
-        { slot: "A1-005", entry: "09:15 AM", duration: "3h 37m", durationMinutes: 217, status: "Normal", license: "BP-2024-102" },
-        { slot: "A1-012", entry: "06:45 AM", duration: "6h 07m", durationMinutes: 367, status: "Warning", license: "BP-2024-103" },
-        { slot: "A1-018", entry: "11:20 AM", duration: "1h 32m", durationMinutes: 92, status: "Normal", license: "BP-2024-104" },
+        { slot: "A1-001", entry: "08:30 AM", duration: "4h 22m", durationMinutes: 262, status: "Normal", license: "BP-2024-101", entryTimestamp: createTimestamp(4, 22) },
+        { slot: "A1-005", entry: "09:15 AM", duration: "3h 37m", durationMinutes: 217, status: "Normal", license: "BP-2024-102", entryTimestamp: createTimestamp(3, 37) },
+        { slot: "A1-012", entry: "06:45 AM", duration: "6h 07m", durationMinutes: 367, status: "Warning", license: "BP-2024-103", entryTimestamp: createTimestamp(6, 7) },
+        { slot: "A1-018", entry: "11:20 AM", duration: "1h 32m", durationMinutes: 92, status: "Normal", license: "BP-2024-104", entryTimestamp: createTimestamp(1, 32) },
       ],
     },
     {
@@ -44,9 +84,9 @@ export function DurationTracker() {
       avgDuration: "2h 30m",
       longestDuration: "4h 15m",
       vehicles: [
-        { slot: "A2-003", entry: "10:00 AM", duration: "2h 52m", durationMinutes: 172, status: "Normal", license: "BP-2024-105" },
-        { slot: "A2-008", entry: "09:30 AM", duration: "3h 22m", durationMinutes: 202, status: "Normal", license: "BP-2024-106" },
-        { slot: "A2-015", entry: "08:00 AM", duration: "4h 52m", durationMinutes: 292, status: "Normal", license: "BP-2024-107" },
+        { slot: "A2-003", entry: "10:00 AM", duration: "2h 52m", durationMinutes: 172, status: "Normal", license: "BP-2024-105", entryTimestamp: createTimestamp(2, 52) },
+        { slot: "A2-008", entry: "09:30 AM", duration: "3h 22m", durationMinutes: 202, status: "Normal", license: "BP-2024-106", entryTimestamp: createTimestamp(3, 22) },
+        { slot: "A2-015", entry: "08:00 AM", duration: "4h 52m", durationMinutes: 292, status: "Normal", license: "BP-2024-107", entryTimestamp: createTimestamp(4, 52) },
       ],
     },
     {
@@ -56,8 +96,8 @@ export function DurationTracker() {
       avgDuration: "1h 45m",
       longestDuration: "2h 40m",
       vehicles: [
-        { slot: "B1-002", entry: "11:30 AM", duration: "1h 22m", durationMinutes: 82, status: "Normal", license: "BP-2024-108" },
-        { slot: "B1-006", entry: "10:45 AM", duration: "2h 07m", durationMinutes: 127, status: "Normal", license: "BP-2024-109" },
+        { slot: "B1-002", entry: "11:30 AM", duration: "1h 22m", durationMinutes: 82, status: "Normal", license: "BP-2024-108", entryTimestamp: createTimestamp(1, 22) },
+        { slot: "B1-006", entry: "10:45 AM", duration: "2h 07m", durationMinutes: 127, status: "Normal", license: "BP-2024-109", entryTimestamp: createTimestamp(2, 7) },
       ],
     },
     {
@@ -67,10 +107,10 @@ export function DurationTracker() {
       avgDuration: "5h 15m",
       longestDuration: "8h 30m",
       vehicles: [
-        { slot: "B2-010", entry: "05:20 AM", duration: "7h 32m", durationMinutes: 452, status: "Alert", license: "BP-2024-110" },
-        { slot: "B2-014", entry: "04:45 AM", duration: "8h 07m", durationMinutes: 487, status: "Alert", license: "BP-2024-111" },
-        { slot: "B2-020", entry: "07:30 AM", duration: "5h 22m", durationMinutes: 322, status: "Warning", license: "BP-2024-112" },
-        { slot: "B2-025", entry: "09:00 AM", duration: "3h 52m", durationMinutes: 232, status: "Normal", license: "BP-2024-113" },
+        { slot: "B2-010", entry: "05:20 AM", duration: "7h 32m", durationMinutes: 452, status: "Alert", license: "BP-2024-110", entryTimestamp: createTimestamp(7, 32) },
+        { slot: "B2-014", entry: "04:45 AM", duration: "8h 07m", durationMinutes: 487, status: "Alert", license: "BP-2024-111", entryTimestamp: createTimestamp(8, 7) },
+        { slot: "B2-020", entry: "07:30 AM", duration: "5h 22m", durationMinutes: 322, status: "Warning", license: "BP-2024-112", entryTimestamp: createTimestamp(5, 22) },
+        { slot: "B2-025", entry: "09:00 AM", duration: "3h 52m", durationMinutes: 232, status: "Normal", license: "BP-2024-113", entryTimestamp: createTimestamp(3, 52) },
       ],
     },
     {
@@ -80,9 +120,9 @@ export function DurationTracker() {
       avgDuration: "4h 20m",
       longestDuration: "7h 15m",
       vehicles: [
-        { slot: "C1-008", entry: "06:00 AM", duration: "6h 52m", durationMinutes: 412, status: "Warning", license: "BP-2024-114" },
-        { slot: "C1-015", entry: "08:30 AM", duration: "4h 22m", durationMinutes: 262, status: "Normal", license: "BP-2024-115" },
-        { slot: "C1-022", entry: "09:45 AM", duration: "3h 07m", durationMinutes: 187, status: "Normal", license: "BP-2024-116" },
+        { slot: "C1-008", entry: "06:00 AM", duration: "6h 52m", durationMinutes: 412, status: "Warning", license: "BP-2024-114", entryTimestamp: createTimestamp(6, 52) },
+        { slot: "C1-015", entry: "08:30 AM", duration: "4h 22m", durationMinutes: 262, status: "Normal", license: "BP-2024-115", entryTimestamp: createTimestamp(4, 22) },
+        { slot: "C1-022", entry: "09:45 AM", duration: "3h 07m", durationMinutes: 187, status: "Normal", license: "BP-2024-116", entryTimestamp: createTimestamp(3, 7) },
       ],
     },
     {
@@ -92,8 +132,8 @@ export function DurationTracker() {
       avgDuration: "6h 30m",
       longestDuration: "9h 45m",
       vehicles: [
-        { slot: "C2-001", entry: "04:00 AM", duration: "8h 52m", durationMinutes: 532, status: "Alert", license: "BP-VIP-001" },
-        { slot: "C2-003", entry: "07:15 AM", duration: "5h 37m", durationMinutes: 337, status: "Warning", license: "BP-VIP-002" },
+        { slot: "C2-001", entry: "04:00 AM", duration: "8h 52m", durationMinutes: 532, status: "Alert", license: "BP-VIP-001", entryTimestamp: createTimestamp(8, 52) },
+        { slot: "C2-003", entry: "07:15 AM", duration: "5h 37m", durationMinutes: 337, status: "Warning", license: "BP-VIP-002", entryTimestamp: createTimestamp(5, 37) },
       ],
     },
   ]
@@ -213,30 +253,45 @@ export function DurationTracker() {
                     <th className="px-6 py-3 text-left text-muted-foreground font-medium text-xs">License Plate</th>
                     <th className="px-6 py-3 text-left text-muted-foreground font-medium text-xs">Entry Time</th>
                     <th className="px-6 py-3 text-left text-muted-foreground font-medium text-xs">Duration</th>
+                    <th className="px-6 py-3 text-left text-muted-foreground font-medium text-xs">Parking Fee</th>
                     <th className="px-6 py-3 text-left text-muted-foreground font-medium text-xs">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {area.vehicles.map((vehicle) => (
-                    <tr key={vehicle.slot} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="text-foreground font-mono font-semibold">{vehicle.slot}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-foreground font-mono">{vehicle.license}</span>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">{vehicle.entry}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-foreground font-semibold">{vehicle.duration}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge className={`border font-medium gap-1 ${getStatusColor(vehicle.status)}`}>
-                          {getStatusIcon(vehicle.status)}
-                          {vehicle.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {area.vehicles.map((vehicle) => {
+                    const { hours, minutes, totalMinutes } = calculateDuration(vehicle.entryTimestamp)
+                    const fee = calculateFee(totalMinutes)
+                    const liveStatus = getStatus(totalMinutes)
+                    
+                    return (
+                      <tr key={vehicle.slot} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="text-foreground font-mono font-semibold">{vehicle.slot}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-foreground font-mono">{vehicle.license}</span>
+                        </td>
+                        <td className="px-6 py-4 text-muted-foreground">{vehicle.entry}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-foreground font-semibold tabular-nums">
+                            {hours}h {minutes.toString().padStart(2, '0')}m
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-foreground font-bold">{fee}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge className={`border font-medium gap-1 ${getStatusColor(liveStatus)}`}>
+                            {getStatusIcon(liveStatus)}
+                            {liveStatus}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

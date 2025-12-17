@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MapPin, Navigation2, ArrowRight, Car, Clock, CheckCircle2, Shield } from "lucide-react"
+import { MapPin, Navigation2, ArrowRight, Car, Clock, CheckCircle2, Shield, Map } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ParkingMap } from "@/components/parking-map"
 
 interface ParkingArea {
   id: string
@@ -23,6 +24,7 @@ export default function PublicParkingView() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [showMap, setShowMap] = useState(false)
 
   const areas: ParkingArea[] = [
     {
@@ -111,6 +113,27 @@ export default function PublicParkingView() {
   const totalSlots = areas.reduce((sum, area) => sum + area.slots, 0)
   const totalOccupied = areas.reduce((sum, area) => sum + area.occupied, 0)
   const totalAvailable = totalSlots - totalOccupied
+
+  // Convert coordinates to lat/lng for map
+  const parseCoordinates = (coords: string) => {
+    const parts = coords.split(',')
+    const lat = parseFloat(parts[0].replace('°', '').replace('N', '').replace('S', '').trim())
+    const lng = parseFloat(parts[1].replace('°', '').replace('W', '').replace('E', '').trim())
+    return { lat: lat, lng: lng * (coords.includes('W') ? -1 : 1) }
+  }
+
+  const mapLocations = filteredAreas.map((area) => {
+    const coords = parseCoordinates(area.coordinates)
+    return {
+      id: area.id,
+      name: area.name,
+      lat: coords.lat,
+      lng: coords.lng,
+      available: area.slots - area.occupied,
+      total: area.slots,
+      category: area.category,
+    }
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -243,8 +266,39 @@ export default function PublicParkingView() {
               >
                 Underground
               </Button>
+              <Button
+                variant={showMap ? "default" : "outline"}
+                onClick={() => setShowMap(!showMap)}
+                className={showMap ? "bg-purple-500 hover:bg-purple-600" : "border-slate-700 text-slate-300"}
+              >
+                <Map className="w-4 h-4 mr-2" />
+                {showMap ? "Hide Map" : "Show Map"}
+              </Button>
             </div>
           </div>
+
+          {/* Map View */}
+          {showMap && (
+            <Card className="mb-8 bg-slate-900/80 border-slate-700/50 backdrop-blur-xl overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Parking Areas Map
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Click on markers to see parking area information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[500px] rounded-lg overflow-hidden">
+                  <ParkingMap
+                    locations={mapLocations}
+                    onMarkerClick={(id) => router.push(`/parking/${id}`)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Parking Areas Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -340,6 +394,7 @@ export default function PublicParkingView() {
                         variant="ghost"
                         size="sm"
                         className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                        onClick={() => router.push(`/parking/${area.id}`)}
                       >
                         <Navigation2 className="w-4 h-4 mr-1" />
                         Navigate

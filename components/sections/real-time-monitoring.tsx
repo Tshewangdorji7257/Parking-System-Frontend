@@ -137,9 +137,6 @@ export function RealTimeMonitoring() {
                     <span className="text-slate-400">Occupied</span>
                   </div>
                 </div>
-                <button className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors">
-                  View Details →
-                </button>
               </div>
             </div>
           )
